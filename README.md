@@ -116,7 +116,7 @@ Understanding your vehicle's true cost helps you:
 
 ## License
 
-This project is open source. Feel free to use, modify, and distribute it.
+This project is released under the [MIT License](LICENSE) © 2026 Peyton Seay. Feel free to use, modify, and distribute it.
 
 ## Contributing
 
