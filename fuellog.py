@@ -4,10 +4,7 @@
 #the fill-ups in a list and answers questions such as "what is my average gas
 #mileage" and "which tank was my worst."
 
-#We need the Fillup class so this file understands what a fill-up is.
-from fillup import Fillup
-
-class FuelLog(object):
+class FuelLog:
 
     #The __init__ method creates a brand new, empty log for one vehicle.
     #It saves the vehicle's nickname and starts an empty list that fill-ups
@@ -15,10 +12,6 @@ class FuelLog(object):
     def __init__(self, vehicleName):
         self.vehicleName = vehicleName
         self.fillups = []
-
-    #The getVehicleName method hands back the nickname of the vehicle.
-    def getVehicleName(self):
-        return self.vehicleName
 
     #The addFillup method adds one new fill-up record to the end of the list.
     def addFillup(self, fillup):
@@ -36,17 +29,13 @@ class FuelLog(object):
         return self.getCount() >= 2
 
     #The getMpgList method builds a list of the gas mileage figures for every
-    #tank of fuel. It walks through the fill-ups starting at the second one,
-    #and for each it compares that fill-up to the one directly before it.
-    #The first fill-up is skipped on purpose because there is nothing earlier
-    #to compare it against.
+    #tank of fuel. It pairs each fill-up with the one directly before it and
+    #compares the two. The first fill-up is skipped on purpose because there
+    #is nothing earlier to compare it against, so self.fillups[1:] starts the
+    #"current" side of each pair at the second fill-up.
     def getMpgList(self):
-        mpgList = []
-        for index in range(1, self.getCount()):
-            current = self.fillups[index]
-            previous = self.fillups[index - 1]
-            mpgList.append(current.milesPerGallon(previous))
-        return mpgList
+        return [current.milesPerGallon(previous)
+                for previous, current in zip(self.fillups, self.fillups[1:])]
 
     #The getTotalMiles method reports the total distance covered across the
     #whole log by subtracting the very first odometer reading from the last one.
@@ -54,45 +43,34 @@ class FuelLog(object):
     def getTotalMiles(self):
         if not self.hasEnoughData():
             return 0
-        first = self.fillups[0]
-        last = self.fillups[self.getCount() - 1]
-        return last.milesSince(first)
+        return self.fillups[-1].milesSince(self.fillups[0])
 
     #The getTotalCost method adds up the dollars spent on every fill-up after
     #the first one. The first fill-up is left out of the total on purpose: the
     #program has no way of knowing how far the driver traveled on that very
     #first tank, so counting its cost would unfairly inflate the cost per mile.
     def getTotalCost(self):
-        total = 0
-        for index in range(1, self.getCount()):
-            total += self.fillups[index].getCost()
-        return total
+        return sum(fillup.getCost() for fillup in self.fillups[1:])
 
     #The getAverageMpg method reports the typical gas mileage across the log.
     #Rather than averaging the individual tank averages, it divides the total
     #miles traveled by the total gallons burned, which is the more accurate way
-    #to combine tanks of different sizes.
+    #to combine tanks of different sizes. With fewer than two fill-ups there
+    #are no gallons to count, so it reports zero instead of dividing by zero.
     def getAverageMpg(self):
-        if not self.hasEnoughData():
-            return 0
-        totalGallons = 0
-        for index in range(1, self.getCount()):
-            totalGallons += self.fillups[index].getGallons()
+        totalGallons = sum(fillup.gallons for fillup in self.fillups[1:])
         if totalGallons <= 0:
             return 0
         return self.getTotalMiles() / totalGallons
 
     #The getBestMpg method finds the single most fuel-efficient tank in the log.
+    #It reports zero when there are no tanks to compare yet.
     def getBestMpg(self):
-        if not self.hasEnoughData():
-            return 0
-        return max(self.getMpgList())
+        return max(self.getMpgList(), default=0)
 
     #The getWorstMpg method finds the single least fuel-efficient tank.
     def getWorstMpg(self):
-        if not self.hasEnoughData():
-            return 0
-        return min(self.getMpgList())
+        return min(self.getMpgList(), default=0)
 
     #The getCostPerMile method reports how many dollars the driver spends on
     #fuel for each mile traveled. It divides the total money spent by the total
@@ -109,6 +87,20 @@ class FuelLog(object):
     #this specific vehicle has actually been performing.
     def estimateTripCost(self, tripMiles):
         return tripMiles * self.getCostPerMile()
+
+    #The getSummaryLines method lists the combined statistics for the whole
+    #log as lines of text. The report on the screen and the report saved to
+    #the file show the same numbers, so both ask this one method for them.
+    #The "unit" is how mileage should be labeled, for example "MPG".
+    def getSummaryLines(self, unit):
+        return [
+            "Total miles driven: %.1f" % self.getTotalMiles(),
+            "Total spent on fuel: $%.2f" % self.getTotalCost(),
+            "Average mileage: %.2f %s" % (self.getAverageMpg(), unit),
+            "Best tank: %.2f %s" % (self.getBestMpg(), unit),
+            "Worst tank: %.2f %s" % (self.getWorstMpg(), unit),
+            "Fuel cost per mile: $%.3f" % self.getCostPerMile(),
+        ]
 
     #The __str__ method describes the log in one short readable line.
     def __str__(self):

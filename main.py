@@ -53,10 +53,10 @@ def addFillupToLog(log):
     #If earlier fill-ups exist, compare against the most recent odometer
     #reading and reject anything that has gone backwards.
     if log.getCount() > 0:
-        lastFillup = log.fillups[log.getCount() - 1]
-        while odometer <= lastFillup.getOdometer():
+        lastFillup = log.fillups[-1]
+        while odometer <= lastFillup.odometer:
             print("The odometer cannot go backwards. Your last reading was",
-                  lastFillup.getOdometer(), "miles.")
+                  lastFillup.odometer, "miles.")
             odometer = askForNumber("Odometer reading in miles: ")
 
     gallons = askForNumber("Gallons of fuel pumped: ")
@@ -77,7 +77,7 @@ def addFillupToLog(log):
 def showReport(log):
     print()
     print("========================================")
-    print("FUEL REPORT FOR", log.getVehicleName().upper())
+    print("FUEL REPORT FOR", log.vehicleName.upper())
     print("========================================")
 
     #Mileage always needs two fill-ups to compare, so stop early if there
@@ -88,21 +88,15 @@ def showReport(log):
         print("Fill-ups recorded so far:", log.getCount())
         return
 
-    #Print the mileage figure for each individual tank of fuel.
-    mpgList = log.getMpgList()
-    tankNumber = 1
-    for mpg in mpgList:
+    #Print the mileage figure for each individual tank of fuel. The
+    #enumerate tool counts the tanks for us, starting from tank number 1.
+    for tankNumber, mpg in enumerate(log.getMpgList(), start=1):
         print("Tank %d: %.2f miles per gallon" % (tankNumber, mpg))
-        tankNumber += 1
 
     #Print the combined statistics for the whole log.
     print("----------------------------------------")
-    print("Total miles driven: %.1f" % log.getTotalMiles())
-    print("Total spent on fuel: $%.2f" % log.getTotalCost())
-    print("Average mileage: %.2f miles per gallon" % log.getAverageMpg())
-    print("Best tank: %.2f miles per gallon" % log.getBestMpg())
-    print("Worst tank: %.2f miles per gallon" % log.getWorstMpg())
-    print("Fuel cost per mile: $%.3f" % log.getCostPerMile())
+    for line in log.getSummaryLines("miles per gallon"):
+        print(line)
     print("========================================")
 
 
@@ -145,15 +139,13 @@ def saveReport(log):
     now = datetime.now()
     stamp = now.strftime("%m/%d/%Y %H:%M:%S")
 
+    #Each line is written with a line break in front of it, so every new
+    #report starts on a fresh line below the one before.
     reportFile.write("\n\n=== Fuel report generated " + stamp + " ===")
-    reportFile.write("\nVehicle: " + log.getVehicleName())
+    reportFile.write("\nVehicle: " + log.vehicleName)
     reportFile.write("\nFill-ups recorded: " + str(log.getCount()))
-    reportFile.write("\nTotal miles driven: %.1f" % log.getTotalMiles())
-    reportFile.write("\nTotal spent on fuel: $%.2f" % log.getTotalCost())
-    reportFile.write("\nAverage mileage: %.2f MPG" % log.getAverageMpg())
-    reportFile.write("\nBest tank: %.2f MPG" % log.getBestMpg())
-    reportFile.write("\nWorst tank: %.2f MPG" % log.getWorstMpg())
-    reportFile.write("\nFuel cost per mile: $%.3f" % log.getCostPerMile())
+    for line in log.getSummaryLines("MPG"):
+        reportFile.write("\n" + line)
 
     #Close the file so the writing is finished and saved properly.
     reportFile.close()
@@ -188,27 +180,24 @@ def main():
 
     #Create the empty log that will hold all of this vehicle's fill-ups.
     log = FuelLog(vehicleName.strip())
-    running = True
+
+    #This table matches each menu number to the function that handles it.
+    actions = {"1": addFillupToLog, "2": showReport,
+               "3": estimateTrip, "4": saveReport}
 
     #Keep showing the menu until the user picks the quit option.
-    while running:
+    while True:
         showMenu()
         choice = input("Enter your choice (1-5): ")
 
         #Send the user to the matching function based on what they typed.
-        if choice == "1":
-            addFillupToLog(log)
-        elif choice == "2":
-            showReport(log)
-        elif choice == "3":
-            estimateTrip(log)
-        elif choice == "4":
-            saveReport(log)
+        if choice in actions:
+            actions[choice](log)
         elif choice == "5":
-            #Turning this switch off ends the loop and the program.
-            running = False
+            #The break line ends the loop and, with it, the program.
             print()
             print("Thanks for tracking with us. Drive safe!")
+            break
         else:
             #Anything other than 1 through 5 is not a valid menu choice.
             print("That is not a valid choice. Please enter 1, 2, 3, 4, or 5.")
