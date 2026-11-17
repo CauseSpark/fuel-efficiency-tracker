@@ -4,23 +4,19 @@
 #and how much they paid for each gallon. This class stores those three
 #numbers together and knows how to do the math on them.
 
-class Fillup(object):
+#Bringing in the dataclass tool, which writes the __init__ method for us.
+from dataclasses import dataclass
 
-    #The __init__ method builds a new fill-up record.
-    #It receives the odometer reading, the gallons pumped, and the price
-    #per gallon, and it saves each one inside the object so it can be used later.
-    def __init__(self, odometer, gallons, pricePerGallon):
-        self.odometer = odometer
-        self.gallons = gallons
-        self.pricePerGallon = pricePerGallon
 
-    #The getOdometer method hands back the mileage reading for this fill-up.
-    def getOdometer(self):
-        return self.odometer
-
-    #The getGallons method hands back how many gallons of fuel were pumped.
-    def getGallons(self):
-        return self.gallons
+#The @dataclass line builds a new fill-up record from the three fields listed
+#below, in that order: Fillup(odometer, gallons, pricePerGallon). Each value
+#is saved inside the object so it can be read later, for example
+#fillup.odometer or fillup.gallons.
+@dataclass
+class Fillup:
+    odometer: float
+    gallons: float
+    pricePerGallon: float
 
     #The getCost method figures out the total dollars spent at the pump
     #by multiplying the gallons pumped by the price of each gallon.
@@ -32,7 +28,7 @@ class Fillup(object):
     #this one. For example, going from 30,000 miles to 30,300 miles means
     #the driver traveled 300 miles on that tank of gas.
     def milesSince(self, previousFillup):
-        return self.odometer - previousFillup.getOdometer()
+        return self.odometer - previousFillup.odometer
 
     #The milesPerGallon method calculates the fuel efficiency for this tank.
     #It takes the miles driven since the last fill-up and divides that by the
